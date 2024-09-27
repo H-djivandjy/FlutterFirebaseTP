@@ -11,6 +11,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: const Text('My Code'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -39,7 +40,23 @@ class HomePage extends StatelessWidget {
           return ListView(
             children: snapshot.data!.docs.map((DocumentSnapshot document) {
               Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
-              return CodeItem(code: data['code'] ?? 'No code');
+              return CodeItem(
+                code: data['code'] ?? 'No code',
+                docId: document.id,
+                onDelete: (String docId) async {
+                  try {
+                    await _firebaseService.deleteCode(docId);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Code deleted successfully')),
+                    );
+                  } catch (e) {
+                    print('Error deleting code: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error deleting code: $e')),
+                    );
+                  }
+                },
+              );
             }).toList(),
           );
         },
@@ -99,8 +116,15 @@ class HomePage extends StatelessWidget {
 
 class CodeItem extends StatelessWidget {
   final String code;
+  final String docId;
+  final Function(String) onDelete;
 
-  const CodeItem({Key? key, required this.code}) : super(key: key);
+  const CodeItem({
+    Key? key, 
+    required this.code, 
+    required this.docId,
+    required this.onDelete,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +135,19 @@ class CodeItem extends StatelessWidget {
         color: Colors.black,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        code,
-        style: const TextStyle(color: Colors.white),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              code,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Color.fromARGB(255, 208, 67, 67)),
+            onPressed: () => onDelete(docId),
+          ),
+        ],
       ),
     );
   }
